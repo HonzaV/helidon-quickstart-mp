@@ -1,7 +1,7 @@
 io\helidon\examples\quickstart\mp\handlers\NoTasksExceptionHandler.class
-io\helidon\examples\quickstart\mp\PermutationApplicaiton.class
 io\helidon\examples\quickstart\mp\PermutationResource.class
 io\helidon\examples\quickstart\mp\ErrorMessage.class
+io\helidon\examples\quickstart\mp\PermutationApplication.class
 io\helidon\examples\quickstart\mp\Main.class
 io\helidon\examples\quickstart\mp\exceptions\NoTasksException.class
 io\helidon\examples\quickstart\mp\Permutations.class

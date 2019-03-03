@@ -11,7 +11,7 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.toList;
 
 public class Permutations implements Callable<ArrayList<List<Object>>> {
-    private double numberOfPermutations;
+    private long numberOfPermutations;
     private double currentPermutations;
     private ArrayList<List<Object>> listOfPermutedArrays;
     private List<Object> originalArray;
@@ -61,7 +61,7 @@ public class Permutations implements Callable<ArrayList<List<Object>>> {
         return listOfPermutedArrays;
     }
 
-    private static long computePossiblePermutations(final int n) {
+    private long computePossiblePermutations(final int n) {
         if(n == 1 || n == 0) {
             return 1;
         }
@@ -69,7 +69,7 @@ public class Permutations implements Callable<ArrayList<List<Object>>> {
         return (n) * computePossiblePermutations(n-1);
     }
 
-    private static <T> List<T> permutationHelper(final long no,final LinkedList<T> in,final List<T> out) {
+    private <T> List<T> permutationHelper(final long no,final LinkedList<T> in,final List<T> out) {
 
         if (in.isEmpty()) {
             return out;
@@ -95,7 +95,7 @@ public class Permutations implements Callable<ArrayList<List<Object>>> {
 
     private <T> Stream<Stream<T>> collectPermutations(final List<T> array) {
 
-        return LongStream.range(0, computePossiblePermutations(array.size()))
+        return LongStream.range(0, numberOfPermutations)
                 .mapToObj(no -> permutation(no, array).stream());
     }
 }

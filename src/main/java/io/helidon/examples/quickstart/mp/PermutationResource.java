@@ -21,7 +21,6 @@ import io.helidon.examples.quickstart.mp.exceptions.CancelledTaskException;
 import io.helidon.examples.quickstart.mp.exceptions.EmptyListException;
 import io.helidon.examples.quickstart.mp.exceptions.NoTasksException;
 
-import javax.annotation.Resource;
 import javax.enterprise.context.RequestScoped;
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -54,14 +53,13 @@ import static javax.ws.rs.core.Response.ok;
 @RequestScoped
 public class PermutationResource {
 
-    @Resource
-    ExecutorService executorService = Executors.newFixedThreadPool(2);
-
-    private static List<Future<ArrayList<List<Object>>>> futures = new LinkedList<>();
-    private static Permutations permutations;
     private static final Logger LOGGER = Logger.getLogger(PermutationResource.class.getName());
 
+    private static Permutations permutations;
+    private static ExecutorService executorService = Executors.newFixedThreadPool(2);
+    private static List<Future<ArrayList<List<Object>>>> futures = new LinkedList<>();
     private static DecimalFormat twoDecimals = new DecimalFormat(".##");
+    private static List<Permutations> asyncPermutationsList = new LinkedList<>();
     /**
      * resource to get permutations of a given list.
      * @param list of elements to be permutated
@@ -72,13 +70,14 @@ public class PermutationResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response getPermutations(@QueryParam("async") boolean async, List<Object> list) throws EmptyListException {
         LOGGER.info("Recieved request, async: " + async + " array: " + list.toString() );
-        if (list == null) {
+        if (list.isEmpty()) {
             throw new EmptyListException("The input list is empty.");
         }
         permutations = new Permutations(list);
         if (async) {
             Future<ArrayList<List<Object>>> task = executorService.submit(permutations);
             futures.add(task);
+            asyncPermutationsList.add(permutations);
 
             JsonObject json = Json.createObjectBuilder().add("taskId", futures.indexOf(task)).build();
             return Response.accepted(json).build();
@@ -102,7 +101,7 @@ public class PermutationResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response getPermutationsProgress(@PathParam("futureTaskId") int futureTaskId) throws CancelledTaskException,
             NoTasksException {
-        LOGGER.info("Recieved request on task " + futureTaskId + "state" );
+        LOGGER.info("Recieved request on task's " + futureTaskId + " state" );
         try {
             Future<ArrayList<List<Object>>> f = futures.get(futureTaskId);
 
@@ -111,22 +110,23 @@ public class PermutationResource {
                     try {
                         ArrayList<List<Object>> response = f.get();
                         futures.remove(futureTaskId);
+                        asyncPermutationsList.remove(futureTaskId);
 
-                        LOGGER.info("Task " + futureTaskId + "has been completed and removed");
+                        LOGGER.info("Task " + futureTaskId + " has been completed and removed");
                         return ok(response).build();
                     } catch (InterruptedException | ExecutionException e) {
                         throw new CancelledTaskException("Task has been cancelled", e);
                     }
                 } else {
                     JsonObject json = Json.createObjectBuilder().add("currentProgressInPercents",
-                            twoDecimals.format(permutations.calcProgress())).build();
+                            twoDecimals.format(asyncPermutationsList.get(futureTaskId).calcProgress())).build();
 
                     LOGGER.info("Task " + futureTaskId + " has not finished yet.");
                     return Response.status(Response.Status.OK).entity(json).build();
                 }
             }
         } catch (IndexOutOfBoundsException e) {
-            throw new NoTasksException("No tasks in list");
+            throw new NoTasksException("There is no task with id " + futureTaskId);
         }
 
         return null;
